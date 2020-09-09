@@ -103,15 +103,59 @@ class DiceRoll():
         else:
             return 0
 
-def gen_roll_lookup():
+def multinomial(lst):
     """
-    Returns a dictionary to resolve a tuple of pips to a corresonding DiceRoll
-    object, to that only 252 DiceRoll objects ever need to be evaluated.
+    Multinomial coefficient function. Copied from stackexchange - thanks Reiner
+    Martin!
     """
-    roll_lookup = {}
-    for roll in combinations_with_replacement(die_spots, 5):
-        roll_lookup[roll] = DiceRoll(roll)
-    for roll in product(die_spots, repeat=5):
-        roll_lookup[roll] = roll_lookup[tuple(sorted(roll))]
-    return roll_lookup
+    res, i = 1, 1
+    for a in lst:
+        for j in range(1,a+1):
+            res *= i
+            res //= j
+            i += 1
+    return res
+
+def transition_probability(hold, R, S):
+    """
+    Compute the probability that pips R becomes S when hold are held and the
+    rest are rerolled.
+    """
+    kept = [x for x, h in zip(R, hold) if h]
+    kept_counts = np.array([kept.count(x) for x in die_spots])
+    S_counts = np.array([S.count(x) for x in die_spots])
+    need_counts = S_counts - kept_counts
+    if (need_counts < 0).any():
+        return 0
+    else:
+        return multinomial(need_counts)/6.0**sum(need_counts)
+
+def gen_tensors():
+    """
+    Return the propagation tensor and weight vector. 
+
+    The propagation tensor is a 32x252x252 tensor. The first component
+    corresponds to the subset of the five dice to be held. The second and third
+    correspond to dice pips. Then the entry in the (h, R, S) position is the
+    probability that R becomes S when h is held.
+
+    The weight tensor is a length 252 (co)vector, whose component corresonds to
+    dice pips. The value in a position is the probability that five dice will
+    give that result when thrown.
+    """
+    prop_tensor = np.empty((32,252,252), dtype=np.dtype('d'))
+    for hold_index, hold in enumerate(product([False, True], repeat=5)):
+        for R_index, R in enumerate(
+                combinations_with_replacement(die_spots, 5)):
+            for S_index, S in enumerate(
+                    combinations_with_replacement(die_spots, 5)):
+                prop_tensor[hold_index, R_index, S_index] = \
+                        transition_probability(hold, R, S)
+    weight_vector = prop_tensor[0,0,:].copy()
+    return prop_tensor,weight_vector
+
+
+
+
+
 
