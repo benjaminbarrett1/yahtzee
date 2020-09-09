@@ -130,32 +130,57 @@ def transition_probability(hold, R, S):
     else:
         return multinomial(need_counts)/6.0**sum(need_counts)
 
-def gen_tensors():
-    """
-    Return the propagation tensor and weight vector. 
+class StateAnalyser():
 
-    The propagation tensor is a 32x252x252 tensor. The first component
-    corresponds to the subset of the five dice to be held. The second and third
-    correspond to dice pips. Then the entry in the (h, R, S) position is the
-    probability that R becomes S when h is held.
+    def __init__(self, generate_roll_lookup=True, generate_tensors=True,
+            evaluate_scores=False):
 
-    The weight tensor is a length 252 (co)vector, whose component corresonds to
-    dice pips. The value in a position is the probability that five dice will
-    give that result when thrown.
-    """
-    prop_tensor = np.empty((32,252,252), dtype=np.dtype('d'))
-    for hold_index, hold in enumerate(product([False, True], repeat=5)):
-        for R_index, R in enumerate(
-                combinations_with_replacement(die_spots, 5)):
-            for S_index, S in enumerate(
+        if generate_roll_lookup:
+            self.gen_roll_lookup
+        else:
+            self.roll_lookup=None
+
+        if generate_tensors:
+            self.gen_tensors()
+        else:
+            self.weight_vector, self.prop_tensor = None,None
+
+        self.values = np.full(2**19, np.nan, dtype=np.dtype('d'))
+        if evaluate_scores:
+            self.evaluate_scores()
+
+    def gen_roll_lookup(self):
+        """
+        Return a dictionary to lookup a roll, returning a DiceRoll object
+        corresponding to that (sorted) roll.
+        """
+
+        self.roll_lookup = {}
+        for roll in combinations_with_replacement(die_spots, 5):
+            self.roll_lookup[roll] = DiceRoll(roll)
+
+    def gen_tensors(self):
+        """
+        Return the propagation tensor and weight vector. 
+
+        The propagation tensor is a 32x252x252 tensor. The first component
+        corresponds to the subset of the five dice to be held. The second and
+        third correspond to dice pips. Then the entry in the (h, R, S) position
+        is the probability that R becomes S when h is held.
+
+        The weight tensor is a length 252 (co)vector, whose component
+        corresonds to dice pips. The value in a position is the probability
+        that five dice will give that result when thrown.
+        """
+        self.prop_tensor = np.empty((32,252,252), dtype=np.dtype('d'))
+        for hold_index, hold in enumerate(product([False, True], repeat=5)):
+            for R_index, R in enumerate(
                     combinations_with_replacement(die_spots, 5)):
-                prop_tensor[hold_index, R_index, S_index] = \
-                        transition_probability(hold, R, S)
-    weight_vector = prop_tensor[0,0,:].copy()
-    return prop_tensor,weight_vector
+                for S_index, S in enumerate(
+                        combinations_with_replacement(die_spots, 5)):
+                    self.prop_tensor[hold_index, R_index, S_index] = \
+                            transition_probability(hold, R, S)
+        self.weight_vector = self.prop_tensor[0,0,:].copy()
 
-
-
-
-
-
+    def evaluate_score(state):
+        pass
