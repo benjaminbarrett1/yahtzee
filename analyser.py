@@ -136,7 +136,7 @@ class StateAnalyser():
             evaluate_scores=False):
 
         if generate_roll_lookup:
-            self.gen_roll_lookup
+            self.gen_roll_lookup()
         else:
             self.roll_lookup=None
 
@@ -145,7 +145,7 @@ class StateAnalyser():
         else:
             self.weight_vector, self.prop_tensor = None,None
 
-        self.values = np.full(2**19, np.nan, dtype=np.dtype('d'))
+        self.state_values = np.full(2**19, np.nan, dtype=np.dtype('d'))
         if evaluate_scores:
             self.evaluate_scores()
 
@@ -182,5 +182,19 @@ class StateAnalyser():
                             transition_probability(hold, R, S)
         self.weight_vector = self.prop_tensor[0,0,:].copy()
 
-    def evaluate_score(state):
+    def score_state(self,state):
+        if open_cats(state) == 0:
+            return 0
+        score_vector = np.empty(252, dtype=np.dtype('d'))
+        for index, roll in enumerate(
+                combinations_with_replacement(die_spots, 5)):
+            score_vector[index] = \
+                    self.roll_lookup[roll].best_score(state, self.state_values)
+        for i in range(3):
+            score_options = np.dot(self.prop_tensor, score_vector)
+            score_vector = score_options.max(axis=0)
+        return np.dot(self.weight_vector, score_vector)
+
+    def evaluate_scores(self):
         pass
+
