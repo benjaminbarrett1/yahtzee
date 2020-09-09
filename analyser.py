@@ -22,6 +22,9 @@ straights = {'Small straight': [range(1,5), range(2,6), range(3,7)],
 def upper_score(state):
     return state >> 13
 
+def open_cats(state):
+    return state & 0x1FFF
+
 def fill_cat(state, cat_code):
     return state | 1 << cat_code
 
@@ -31,6 +34,28 @@ class DiceRoll():
         self.pips = pips.sorted()
         self.scores = {cat: self.score_as(cat) for cat in categories}
         self.upper = {cat: self.upper_score(cat) for cat in categories}
+
+    def best_score(self, state, forward_scores):
+        """
+        Choose the best category in which to score this roll, taking into
+        account the state and the potential for future scores. Return the
+        optimal score.
+        """
+        best = 0
+        for i, cat in enumerate(categories):
+            if state >> i & 1:
+                upper_total = upper_score(state) + self.upper[cat]
+                new_upper = min(upper_total, 63)
+                new_state = new_upper << 13 | open_cats(state) | 1 << i
+                forward = forward_scores[new_state]
+                if upper_total >= 63:
+                    upper_bonus = 35
+                else:
+                    upper_bonus = 0
+                present = upper_bonus + self.scores[cat]
+                if forward + present > best:
+                    best = forward + present
+        return best
 
     def score_as(self, cat):
         if cat is in upper_categories:
