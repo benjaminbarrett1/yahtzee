@@ -10,8 +10,8 @@ categories = ['Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes',
 upper_categories = {'Ones': 1, 'Twos': 2, 'Threes': 3, 'Fours': 4, 
         'Fives': 5, 'Sixes': 6}
 
-straights = {'Small straight': [range(1,5), range(2,6), range(3,7)],
-        'Large straight': [range(1,6), range(2,7)]}
+small_straights = {range(1,5), range(2,6), range(3,7)}
+large_straights = {range(1,6), range(2,7)}
 
 # To simplify things, (and I suppose to minimise storage), each game state will
 # be single integer with at most 19 bits. The least significant 13 bits
@@ -31,7 +31,7 @@ def fill_cat(state, cat_code):
 class DiceRoll():
 
     def __init__(self, pips):
-        self.pips = pips.sorted()
+        self.pips = tuple(sorted(list(pips)))
         self.scores = {cat: self.score_as(cat) for cat in categories}
         self.upper = {cat: self.upper_score(cat) for cat in categories}
 
@@ -58,44 +58,49 @@ class DiceRoll():
         return best
 
     def score_as(self, cat):
-        if cat is in upper_categories:
+        if cat in upper_categories:
             return sum([x for x in self.pips if x == upper_categories[cat]])
-        else if cat == 'Three of a kind':
+        elif cat == 'Three of a kind':
             counts = [self.pips.count(x) for x in die_spots]
             if max(counts) >= 3:
                 return sum(self.pips)
             else:
                 return 0
-        else if cat == 'Four of a kind':
+        elif cat == 'Four of a kind':
             counts = [self.pips.count(x) for x in die_spots]
             if max(counts) >= 4:
                 return sum(self.pips)
             else:
                 return 0
-        else if cat == 'Full house':
-            counts = [self.pips.count(x) for x in die_spots].sorted()
-            if counts[3] == 2 and counts[4] == 3:
+        elif cat == 'Full house':
+            counts = sorted([self.pips.count(x) for x in die_spots])
+            if counts[-1] == 2 and counts[-2] == 3:
                 return 25
             else:
                 return 0
-        else if cat is in straights:
-            if [[x is in self.pips for x in strt].all() 
-                    for strt in straights[cat]].any():
+        elif cat == 'Small straight':
+            if any([all([x in self.pips for x in strt]) 
+                    for strt in small_straights]):
                 return 30
             else:
                 return 0
-        else if cat == 'Yahtzee':
-            counts = [self.pips.count(x) for x in die_spots]
-            if max(counts) == 5:
-                return sum(self.pips)
+        elif cat == 'Large straight':
+            if any([all([x in self.pips for x in strt]) 
+                    for strt in large_straights]):
+                return 40
             else:
                 return 0
-        else if cat == 'Chance':
+        elif cat == 'Yahtzee':
+            counts = [self.pips.count(x) for x in die_spots]
+            if max(counts) == 5:
+                return 50
+            else:
+                return 0
+        elif cat == 'Chance':
             return sum(self.pips)
 
-
     def upper_score(self, cat):
-        if cat is in upper_categories:
+        if cat in upper_categories:
             return sum([x for x in self.pips if x == upper_categories[cat]])
         else:
             return 0
@@ -109,7 +114,6 @@ def roll_lookup():
     for roll in combinations_with_replacement(die_spots, 5):
         rolls[roll] = DiceRoll(roll)
     for roll in product(die_spots, repeat=5):
-        rolls[roll] = rolls[roll.sorted()]
+        rolls[roll] = rolls[sorted(roll)]
     return rolls
 
-def propagation_tensor():
