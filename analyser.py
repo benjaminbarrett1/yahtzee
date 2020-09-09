@@ -25,9 +25,6 @@ def upper_score(state):
 def open_cats(state):
     return state & 0x1FFF
 
-def fill_cat(state, cat_code):
-    return state | 1 << cat_code
-
 class DiceRoll():
 
     def __init__(self, pips):
@@ -46,7 +43,8 @@ class DiceRoll():
             if state >> i & 1:
                 upper_total = upper_score(state) + self.upper[cat]
                 new_upper = min(upper_total, 63)
-                new_state = new_upper << 13 | open_cats(state) | 1 << i
+                new_open = (open_cats(state) & ~(1 << i)) & 0x1FFF
+                new_state = new_upper << 13 | new_open
                 forward = forward_scores[new_state]
                 if upper_total >= 63:
                     upper_bonus = 35
@@ -74,7 +72,7 @@ class DiceRoll():
                 return 0
         elif cat == 'Full house':
             counts = sorted([self.pips.count(x) for x in die_spots])
-            if counts[-1] == 2 and counts[-2] == 3:
+            if counts[-1] == 3 and counts[-2] == 2:
                 return 25
             else:
                 return 0
