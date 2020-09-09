@@ -28,7 +28,7 @@ def open_cats(state):
 class DiceRoll():
 
     def __init__(self, pips):
-        self.pips = tuple(sorted(list(pips)))
+        self.pips = tuple(sorted(pips))
         self.scores = {cat: self.score_as(cat) for cat in categories}
         self.upper = {cat: self.upper_score(cat) for cat in categories}
 
@@ -103,15 +103,15 @@ class DiceRoll():
         else:
             return 0
 
-def roll_lookup():
+def gen_roll_lookup():
     """
     Returns a dictionary to resolve a tuple of pips to a corresonding DiceRoll
     object, to that only 252 DiceRoll objects ever need to be evaluated.
     """
-    rolls = {}
+    roll_lookup = {}
     for roll in combinations_with_replacement(die_spots, 5):
-        rolls[roll] = DiceRoll(roll)
+        roll_lookup[roll] = DiceRoll(roll)
     for roll in product(die_spots, repeat=5):
-        rolls[roll] = rolls[sorted(roll)]
-    return rolls
+        roll_lookup[roll] = roll_lookup[tuple(sorted(roll))]
+    return roll_lookup
 
