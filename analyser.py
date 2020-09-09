@@ -43,16 +43,10 @@ class DiceRoll():
             if state >> i & 1:
                 upper_total = upper_score(state) + self.upper[cat]
                 new_upper = min(upper_total, 63)
-                new_open = (open_cats(state) & ~(1 << i)) & 0x1FFF
+                new_open = (state & ~(1 << i)) & 0x1FFF
                 new_state = new_upper << 13 | new_open
-                forward = forward_scores[new_state]
-                if upper_total >= 63:
-                    upper_bonus = 35
-                else:
-                    upper_bonus = 0
-                present = upper_bonus + self.scores[cat]
-                if forward + present > best:
-                    best = forward + present
+                value = forward_scores[new_state] + self.scores[cat]
+                best = max(best, value)
         return best
 
     def score_as(self, cat):
@@ -165,8 +159,8 @@ class StateAnalyser():
 
         The propagation tensor is a 32x252x252 tensor. The first component
         corresponds to the subset of the five dice to be held. The second and
-        third correspond to dice pips. Then the entry in the (h, R, S) position
-        is the probability that R becomes S when h is held.
+        third correspond to dice pips. Then the entry in the (h, R, S)
+        position is the probability that R becomes S when h is held.
 
         The weight tensor is a length 252 (co)vector, whose component
         corresonds to dice pips. The value in a position is the probability
@@ -184,17 +178,21 @@ class StateAnalyser():
 
     def score_state(self,state):
         if open_cats(state) == 0:
-            return 0
+            return 0 if upper_score(state) < 63 else 35
         score_vector = np.empty(252, dtype=np.dtype('d'))
         for index, roll in enumerate(
                 combinations_with_replacement(die_spots, 5)):
             score_vector[index] = \
-                    self.roll_lookup[roll].best_score(state, self.state_values)
+                    self.roll_lookup[roll].best_score(state,
+                            self.state_values)
         for i in range(3):
             score_options = np.dot(self.prop_tensor, score_vector)
             score_vector = score_options.max(axis=0)
         return np.dot(self.weight_vector, score_vector)
 
     def evaluate_scores(self):
-        pass
+        all_states = list(range(2**19))
+        all_states.sort(key = lambda x: bin(x & 0x1FFF).count("1"))
+        for state in all_states:
+            self.state_values[state] = self.score_state(state)
 
