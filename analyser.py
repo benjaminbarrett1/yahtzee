@@ -3,9 +3,9 @@ from itertools import combinations_with_replacement, product
 
 die_spots = range(1,7)
 
-categories = ['Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes', 
-        'Three of a kind', 'Four of a kind', 'Full house', 
-        'Small straight', 'Large straight', 'Yahtzee', 'Chance']
+categories = {'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes', 
+        'Three of a kind', 'Four of a kind', 'Full house', 'Small straight',
+        'Large straight', 'Yahtzee', 'Chance'}
 
 upper_categories = {'Ones': 1, 'Twos': 2, 'Threes': 3, 'Fours': 4, 
         'Fives': 5, 'Sixes': 6}
@@ -13,12 +13,24 @@ upper_categories = {'Ones': 1, 'Twos': 2, 'Threes': 3, 'Fours': 4,
 straights = {'Small straight': [range(1,5), range(2,6), range(3,7)],
         'Large straight': [range(1,6), range(2,7)]}
 
+# To simplify things, (and I suppose to minimise storage), each game state will
+# be single integer with at most 19 bits. The least significant 13 bits
+# correspond to the categories being open, with the least significant
+# corresponding to 'Ones', and the next 6 corresond to the upper section score,
+# with the integer 63 representing all numbers 63+.
+
+def upper_score(state):
+    return state >> 13
+
+def fill_cat(state, cat_code):
+    return state | 1 << cat_code
+
 class DiceRoll():
 
     def __init__(self, pips):
         self.pips = pips.sorted()
-        self.scores = {cat: self.score_as(cat) for cat in categories}
-        self.upper = {cat: self.upper_score(cat) for cat in categories}
+        self.scores = {cat: self.score_as(cat) for cat in categories.keys}
+        self.upper = {cat: self.upper_score(cat) for cat in categories.keys}
 
     def score_as(self, cat):
         if cat is in upper_categories:
