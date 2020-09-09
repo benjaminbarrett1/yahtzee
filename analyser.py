@@ -3,9 +3,9 @@ from itertools import combinations_with_replacement, product
 
 die_spots = range(1,7)
 
-categories = {'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes', 
+categories = ['Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes', 
         'Three of a kind', 'Four of a kind', 'Full house', 'Small straight',
-        'Large straight', 'Yahtzee', 'Chance'}
+        'Large straight', 'Yahtzee', 'Chance']
 
 upper_categories = {'Ones': 1, 'Twos': 2, 'Threes': 3, 'Fours': 4, 
         'Fives': 5, 'Sixes': 6}
@@ -29,8 +29,8 @@ class DiceRoll():
 
     def __init__(self, pips):
         self.pips = pips.sorted()
-        self.scores = {cat: self.score_as(cat) for cat in categories.keys}
-        self.upper = {cat: self.upper_score(cat) for cat in categories.keys}
+        self.scores = {cat: self.score_as(cat) for cat in categories}
+        self.upper = {cat: self.upper_score(cat) for cat in categories}
 
     def score_as(self, cat):
         if cat is in upper_categories:
