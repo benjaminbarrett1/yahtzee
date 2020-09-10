@@ -185,7 +185,7 @@ class StateAnalyser():
             score_vector[index] = \
                     self.roll_lookup[roll].best_score(state,
                             self.forward_values)
-        for i in range(3):
+        for i in range(2):
             score_options = np.dot(self.prop_tensor, score_vector)
             score_vector = score_options.max(axis=0)
         return np.dot(self.weight_vector, score_vector)
